@@ -1,0 +1,120 @@
+# Cursor AI Rules for PerAlert Project
+
+## Commit Message Guidelines
+
+When generating commit messages, ALWAYS follow the Conventional Commits specification:
+
+### Format
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Types (Required)
+- **feat**: New feature for the user
+- **fix**: Bug fix for the user  
+- **docs**: Documentation changes
+- **style**: Code style changes (formatting, missing semicolons, etc.)
+- **refactor**: Code changes that neither fix bugs nor add features
+- **perf**: Performance improvements
+- **test**: Adding or updating tests
+- **chore**: Maintenance tasks, dependency updates, build changes
+- **ci**: CI/CD pipeline changes
+- **build**: Build system or external dependency changes
+- **revert**: Reverting a previous commit
+
+### Scopes (Optional but Recommended)
+- **auth**: Authentication related changes
+- **ui**: User interface components
+- **api**: API endpoints and server logic
+- **db**: Database schema and migrations
+- **alerts**: Alert management functionality
+- **integrations**: Third-party integrations (Gmail, Twilio, etc.)
+- **dashboard**: Dashboard pages and components
+- **jobs**: Background job processing (Inngest)
+- **config**: Configuration files
+- **deps**: Dependencies
+
+### Rules
+1. Use imperative, present tense: "add" not "added" nor "adds"
+2. Don't capitalize first letter of description
+3. No period (.) at the end of description
+4. Keep header under 50 characters
+5. Wrap body at 72 characters per line
+
+### Examples
+✅ Good:
+- `feat(auth): add Google OAuth integration`
+- `fix(alerts): resolve timezone parsing issue`
+- `docs: update API endpoint documentation`
+- `refactor(ui): extract common form validation logic`
+
+❌ Bad:
+- `Add new feature`
+- `Fixed bugs`
+- `Updates`
+- `feat: Add Google OAuth Integration.`
+
+## Code Style Guidelines
+
+### TypeScript
+- Use strict TypeScript configuration
+- Always provide proper type definitions
+- Avoid using `any` type
+- Use interfaces for object shapes
+- Prefer `const` over `let` when possible
+
+### React Components
+- Use functional components with hooks
+- Follow existing component structure in the project
+- Keep components focused and reusable
+- Use proper prop types with TypeScript interfaces
+
+### API Routes
+- Follow RESTful conventions
+- Implement proper error handling with try/catch
+- Use Zod for input validation
+- Return appropriate HTTP status codes
+- Include proper TypeScript types for request/response
+
+### Database (Prisma)
+- Use Prisma client for all database operations
+- Write migrations for schema changes
+- Follow existing naming conventions for models
+- Use transactions for related operations
+
+### File Organization
+- Follow the existing project structure
+- Place components in appropriate directories
+- Use barrel exports (index.ts) when beneficial
+- Keep related files together
+
+### Naming Conventions
+- Use PascalCase for components and interfaces
+- Use camelCase for variables and functions
+- Use kebab-case for file names
+- Use UPPER_CASE for constants
+
+## Security Guidelines
+- Never commit sensitive data (API keys, passwords)
+- Always use environment variables for configuration
+- Validate all user inputs
+- Use proper authentication and authorization
+- Follow security best practices for Next.js
+
+## Testing Guidelines
+- Write tests for new functionality
+- Use descriptive test names
+- Test both happy path and error cases
+- Include integration tests for API routes
+
+## Documentation
+- Update README.md for significant changes
+- Comment complex business logic
+- Keep API documentation up to date
+- Use JSDoc for function documentation when helpful
+
+Remember: These rules help maintain code quality, consistency, and team collaboration!

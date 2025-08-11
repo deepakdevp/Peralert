@@ -1,0 +1,31 @@
+# <type>[optional scope]: <description>
+#
+# [optional body]
+#
+# [optional footer(s)]
+
+# --- COMMIT END ---
+# Type can be 
+#    feat     (new feature)
+#    fix      (bug fix)
+#    refactor (refactoring code)
+#    style    (formatting, missing semicolons, etc.)
+#    docs     (changes to documentation)
+#    test     (adding or refactoring tests)
+#    chore    (maintenance, deps, build changes)
+#    perf     (performance improvements)
+#    ci       (CI/CD changes)
+#    build    (build system changes)
+#    revert   (reverting previous commit)
+# --------------------
+# Scope can be 
+#    auth, ui, api, db, alerts, integrations,
+#    dashboard, jobs, config, deps
+# --------------------
+# Remember to
+#    - Capitalize the subject line
+#    - Use the imperative mood in the subject line
+#    - Do not end the subject line with a period
+#    - Separate subject from body with a blank line
+#    - Use the body to explain what and why vs. how
+#    - Can use multiple lines with "-" for bullet points in body

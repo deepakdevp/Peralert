@@ -1,0 +1,145 @@
+{
+  "commitMessageFormat": "conventional",
+  "rules": {
+    "types": [
+      {
+        "type": "feat",
+        "description": "A new feature for the user",
+        "examples": ["feat(auth): add Google OAuth integration", "feat(alerts): add WhatsApp message scheduling"]
+      },
+      {
+        "type": "fix", 
+        "description": "A bug fix for the user",
+        "examples": ["fix(alerts): resolve cron parsing issue", "fix(auth): handle expired OAuth tokens"]
+      },
+      {
+        "type": "docs",
+        "description": "Documentation changes",
+        "examples": ["docs: update API endpoint documentation", "docs(setup): add Twilio configuration guide"]
+      },
+      {
+        "type": "style",
+        "description": "Code style changes (formatting, missing semicolons, etc.)",
+        "examples": ["style(ui): fix component formatting", "style: add missing semicolons"]
+      },
+      {
+        "type": "refactor",
+        "description": "Code changes that neither fix bugs nor add features",
+        "examples": ["refactor(ui): extract common form validation logic", "refactor(api): simplify error handling"]
+      },
+      {
+        "type": "perf",
+        "description": "Performance improvements",
+        "examples": ["perf(db): optimize user query performance", "perf(ui): lazy load dashboard components"]
+      },
+      {
+        "type": "test",
+        "description": "Adding or updating tests",
+        "examples": ["test(auth): add OAuth flow integration tests", "test(api): add alert creation endpoint tests"]
+      },
+      {
+        "type": "chore",
+        "description": "Maintenance tasks, dependency updates, build changes",
+        "examples": ["chore(deps): update Next.js to version 14.2.15", "chore: update git ignore patterns"]
+      },
+      {
+        "type": "ci",
+        "description": "CI/CD pipeline changes",
+        "examples": ["ci: add automated testing workflow", "ci: update deployment configuration"]
+      },
+      {
+        "type": "build",
+        "description": "Build system or external dependency changes",  
+        "examples": ["build: update webpack configuration", "build(deps): upgrade Prisma to v5.22.0"]
+      },
+      {
+        "type": "revert",
+        "description": "Reverting a previous commit",
+        "examples": ["revert: remove experimental alert feature", "revert(auth): rollback OAuth changes"]
+      }
+    ],
+    "scopes": [
+      {
+        "scope": "auth",
+        "description": "Authentication related changes",
+        "examples": ["OAuth integration", "session management", "user authentication"]
+      },
+      {
+        "scope": "ui", 
+        "description": "User interface components",
+        "examples": ["React components", "styling", "layouts", "forms"]
+      },
+      {
+        "scope": "api",
+        "description": "API endpoints and server logic",
+        "examples": ["REST endpoints", "API routes", "server-side logic"]
+      },
+      {
+        "scope": "db",
+        "description": "Database schema and migrations", 
+        "examples": ["Prisma schema", "database migrations", "data models"]
+      },
+      {
+        "scope": "alerts",
+        "description": "Alert management functionality",
+        "examples": ["alert creation", "scheduling", "message templates"]
+      },
+      {
+        "scope": "integrations",
+        "description": "Third-party integrations",
+        "examples": ["Gmail API", "Twilio WhatsApp", "Inngest jobs"]
+      },
+      {
+        "scope": "dashboard",
+        "description": "Dashboard pages and components",
+        "examples": ["dashboard UI", "analytics", "user management"]
+      },
+      {
+        "scope": "jobs",
+        "description": "Background job processing (Inngest)",
+        "examples": ["scheduled jobs", "email polling", "message sending"]
+      },
+      {
+        "scope": "config",
+        "description": "Configuration files",
+        "examples": ["environment variables", "build configuration", "tooling setup"]
+      },
+      {
+        "scope": "deps",
+        "description": "Dependencies",
+        "examples": ["package updates", "dependency management", "version upgrades"]
+      }
+    ]
+  },
+  "format": {
+    "headerMaxLength": 50,
+    "bodyMaxLineLength": 72,
+    "useImperativeMood": true,
+    "capitalizeFirstLetter": false,
+    "endWithPeriod": false
+  },
+  "validation": {
+    "enforceConventionalCommits": true,
+    "requireScope": false,
+    "requireBody": false,
+    "requireFooter": false
+  },
+  "examples": {
+    "good": [
+      "feat(auth): add Google OAuth integration",
+      "fix(alerts): resolve timezone parsing issue", 
+      "docs: update API endpoint documentation",
+      "refactor(ui): extract common form validation logic",
+      "perf(db): optimize user query performance",
+      "test(auth): add OAuth flow integration tests",
+      "chore(deps): update Next.js to version 14.2.15"
+    ],
+    "bad": [
+      "Add new feature",
+      "Fixed bugs", 
+      "Updates",
+      "feat: Add Google OAuth Integration.",
+      "WIP: working on alerts"
+    ]
+  }
+}
