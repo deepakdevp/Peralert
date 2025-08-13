@@ -4,12 +4,13 @@ import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Suspense } from "react"
 
-export default function AuthErrorPage() {
+function AuthErrorContent() {
   const searchParams = useSearchParams()
-  const error = searchParams.get("error")
+  const error = searchParams?.get("error")
 
-  const getErrorMessage = (error: string | null) => {
+  const getErrorMessage = (error: string | null | undefined) => {
     switch (error) {
       case "Configuration":
         return "There is a problem with the server configuration. Please contact support."
@@ -69,5 +70,13 @@ export default function AuthErrorPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AuthErrorPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+      <AuthErrorContent />
+    </Suspense>
   )
 }
