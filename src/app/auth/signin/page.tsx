@@ -1,17 +1,18 @@
 "use client"
 
-import { getProviders, signIn, getSession } from "next-auth/react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { createClient } from "@/lib/supabase/client"
+import { useSupabase } from "@/components/providers"
 
 export default function SignInPage() {
-  const [providers, setProviders] = useState<any>(null)
-  const [session, setSession] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const { user, loading } = useSupabase()
+  const supabase = createClient()
 
   const benefits = [
     {
@@ -37,32 +38,32 @@ export default function SignInPage() {
   ];
 
   useEffect(() => {
-    // Check if already signed in
-    getSession().then((session) => {
-      if (session) {
-        router.push("/dashboard")
-      } else {
-        setSession(null)
-      }
-    })
+    if (!loading && user) {
+      router.push("/dashboard")
+    }
+  }, [user, loading, router])
 
-    // Get available providers
-    getProviders().then((providers) => {
-      setProviders(providers)
-    })
-  }, [router])
-
-  const handleSignIn = async (providerId: string) => {
+  const handleGoogleSignIn = async () => {
     setIsLoading(true)
     try {
-      await signIn(providerId, { callbackUrl: "/dashboard" })
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/api/auth/callback`,
+          scopes: 'openid email profile https://www.googleapis.com/auth/gmail.readonly'
+        }
+      })
+      if (error) {
+        console.error("Sign in error:", error)
+        setIsLoading(false)
+      }
     } catch (error) {
       console.error("Sign in error:", error)
       setIsLoading(false)
     }
   }
 
-  if (session) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center relative bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-900/20 via-slate-900/50 to-black/80"></div>
@@ -132,31 +133,21 @@ export default function SignInPage() {
               </CardHeader>
               
               <CardContent className="space-y-4">
-                {providers && Object.values(providers).map((provider: any, index: number) => (
-                  <Button
-                    key={provider.name}
-                    onClick={() => handleSignIn(provider.id)}
-                    className={`w-full py-4 text-lg font-semibold bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-fade-in-up delay-${(index + 4) * 100} group`}
-                    disabled={isLoading}
-                  >
-                    <div className="flex items-center justify-center space-x-3">
-                      <span className="text-2xl group-hover:scale-110 transition-transform duration-300">
-                        {provider.id === "google" ? "🔍" : "🐙"}
-                      </span>
-                      <span className="text-white">Continue with {provider.name}</span>
-                      {isLoading && (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      )}
-                    </div>
-                  </Button>
-                ))}
-                
-                {!providers && (
-                  <div className="text-center py-6">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto mb-3"></div>
-                    <p className="text-sm text-gray-400">Loading sign-in options...</p>
+                <Button
+                  onClick={handleGoogleSignIn}
+                  className="w-full py-4 text-lg font-semibold bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all duration-300 transform hover:scale-105 hover:shadow-xl group"
+                  disabled={isLoading}
+                >
+                  <div className="flex items-center justify-center space-x-3">
+                    <span className="text-2xl group-hover:scale-110 transition-transform duration-300">
+                      🔍
+                    </span>
+                    <span className="text-white">Continue with Google</span>
+                    {isLoading && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
                   </div>
-                )}
+                </Button>
               </CardContent>
 
               <div className="text-center mt-6">
