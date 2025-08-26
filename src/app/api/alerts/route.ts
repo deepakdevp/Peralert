@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { createClient } from "@/lib/supabase/server"
 import { z } from "zod"
 
 const createAlertSchema = z.object({
@@ -16,21 +14,21 @@ const createAlertSchema = z.object({
 })
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
+  const supabase = createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
   
-  if (!session?.user?.id) {
+  if (userError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
-    const alerts = await prisma.alert.findMany({
-      where: {
-        userId: session.user.id,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    })
+    const { data: alerts, error } = await supabase
+      .from('alerts')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
 
     return NextResponse.json({ alerts })
   } catch (error) {
@@ -43,9 +41,10 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const supabase = createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
   
-  if (!session?.user?.id) {
+  if (userError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -58,17 +57,21 @@ export async function POST(request: NextRequest) {
     const nextRunAt = new Date()
     nextRunAt.setHours(nextRunAt.getHours() + 1) // Next hour for demo
 
-    const alert = await prisma.alert.create({
-      data: {
-        userId: session.user.id,
+    const { data: alert, error } = await supabase
+      .from('alerts')
+      .insert({
+        user_id: user.id,
         name: data.name,
         channel: "whatsapp",
         to: data.to,
-        scheduleCron: data.scheduleCron,
-        nextRunAt,
+        schedule_cron: data.scheduleCron,
+        next_run_at: nextRunAt.toISOString(),
         template: data.template,
-      },
-    })
+      })
+      .select()
+      .single()
+
+    if (error) throw error
 
     return NextResponse.json({ alert }, { status: 201 })
   } catch (error) {

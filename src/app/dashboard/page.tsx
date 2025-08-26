@@ -1,12 +1,12 @@
 "use client"
 
-import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useSupabase } from "@/components/providers"
 
 export default function DashboardPage() {
-  const { data: session } = useSession()
+  const { user } = useSupabase()
 
   const stats = [
     {
@@ -52,7 +52,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">
-          Welcome back, {session?.user?.name || "User"}!
+          Welcome back, {user?.user_metadata?.name || "User"}!
         </h1>
         <p className="text-gray-600 mt-2">
           Here's what's happening with your alerts today.
@@ -119,7 +119,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="font-medium">Sign up completed</p>
-                <p className="text-sm text-gray-600">You're logged in with {session?.user?.email}</p>
+                <p className="text-sm text-gray-600">You're logged in with {user?.email}</p>
               </div>
             </div>
             

@@ -1,14 +1,14 @@
 "use client"
 
-import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useState } from "react"
+import { useSupabase } from "@/components/providers"
 
 export default function SettingsPage() {
-  const { data: session } = useSession()
+  const { user } = useSupabase()
   const [timezone, setTimezone] = useState("Asia/Singapore")
   const [defaultPhone, setDefaultPhone] = useState("")
 
@@ -39,14 +39,14 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div>
               <Label>Name</Label>
-              <Input value={session?.user?.name || ""} disabled />
+              <Input value={user?.user_metadata?.name || ""} disabled />
             </div>
             <div>
               <Label>Email</Label>
-              <Input value={session?.user?.email || ""} disabled />
+              <Input value={user?.email || ""} disabled />
             </div>
             <p className="text-sm text-gray-500">
-              Profile information is managed by your sign-in provider (Google/GitHub)
+              Profile information is managed by your sign-in provider (Google)
             </p>
           </div>
         </CardContent>

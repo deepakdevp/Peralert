@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest"
-import { prisma } from "@/lib/prisma"
+import { createClient } from "@/lib/supabase/server"
 import twilio from "twilio"
 
 // Initialize Twilio client
@@ -17,15 +17,21 @@ export const sendWhatsAppAlert = inngest.createFunction(
 
     // Log the delivery attempt
     const delivery = await step.run("log-delivery", async () => {
-      return prisma.delivery.create({
-        data: {
-          alertId,
-          userId,
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('deliveries')
+        .insert({
+          alert_id: alertId,
+          user_id: userId,
           channel: "whatsapp",
           payload: { to, message, title },
           status: "queued",
-        },
-      })
+        })
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
     })
 
     // Send WhatsApp message
@@ -37,26 +43,28 @@ export const sendWhatsAppAlert = inngest.createFunction(
           body: `*${title}*\n\n${message}`,
         })
 
-        await prisma.delivery.update({
-          where: { id: delivery.id },
-          data: { 
+        const supabase = createClient()
+        await supabase
+          .from('deliveries')
+          .update({ 
             status: "sent",
             payload: { 
               ...delivery.payload as any,
               twilioSid: response.sid 
             }
-          },
-        })
+          })
+          .eq('id', delivery.id)
 
         return { success: true, sid: response.sid }
       } catch (error) {
-        await prisma.delivery.update({
-          where: { id: delivery.id },
-          data: { 
+        const supabase = createClient()
+        await supabase
+          .from('deliveries')
+          .update({ 
             status: "failed",
             error: error instanceof Error ? error.message : "Unknown error"
-          },
-        })
+          })
+          .eq('id', delivery.id)
 
         throw error
       }
@@ -72,17 +80,18 @@ export const scheduleAlerts = inngest.createFunction(
   { cron: "0 * * * *" }, // Every hour
   async ({ step }) => {
     const dueAlerts = await step.run("find-due-alerts", async () => {
-      return prisma.alert.findMany({
-        where: {
-          enabled: true,
-          nextRunAt: {
-            lte: new Date(),
-          },
-        },
-        include: {
-          user: true,
-        },
-      })
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('alerts')
+        .select(`
+          *,
+          profiles (*)
+        `)
+        .eq('enabled', true)
+        .lte('next_run_at', new Date().toISOString())
+      
+      if (error) throw error
+      return data || []
     })
 
     const results = await step.run("process-alerts", async () => {
@@ -103,7 +112,7 @@ export const scheduleAlerts = inngest.createFunction(
           
           // Replace built-in variables
           const now = new Date()
-          const timeZone = alert.user.timezone || 'UTC'
+          const timeZone = alert.profiles?.timezone || 'UTC'
           const localTime = now.toLocaleString('en-US', { timeZone })
           message = message.replace(/{{now\.tz}}/g, localTime)
 
@@ -112,7 +121,7 @@ export const scheduleAlerts = inngest.createFunction(
             name: "alerts.send",
             data: {
               alertId: alert.id,
-              userId: alert.userId,
+              userId: alert.user_id,
               to: alert.to,
               message,
               title: template.title || alert.name,
@@ -121,12 +130,13 @@ export const scheduleAlerts = inngest.createFunction(
 
           // Update next run time based on cron schedule
           // For now, we'll skip the complex cron parsing and update manually
-          await prisma.alert.update({
-            where: { id: alert.id },
-            data: {
-              nextRunAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // Next day for demo
-            },
-          })
+          const supabase = createClient()
+          await supabase
+            .from('alerts')
+            .update({
+              next_run_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Next day for demo
+            })
+            .eq('id', alert.id)
 
           results.push({ alertId: alert.id, status: "scheduled" })
         } catch (error) {
@@ -151,47 +161,49 @@ export const pollGmail = inngest.createFunction(
   { cron: "*/5 * * * *" }, // Every 5 minutes
   async ({ step }) => {
     const integrations = await step.run("get-gmail-integrations", async () => {
-      return prisma.integration.findMany({
-        where: {
-          type: "gmail",
-          enabled: true,
-        },
-        include: {
-          user: {
-            include: {
-              accounts: {
-                where: {
-                  provider: "google"
-                }
-              }
-            }
-          }
-        },
-      })
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('integrations')
+        .select('*')
+        .eq('type', 'gmail')
+        .eq('enabled', true)
+      
+      if (error) throw error
+      return data || []
     })
 
     const results = await step.run("poll-emails", async () => {
       const results = []
       
       for (const integration of integrations) {
-        const googleAccount = integration.user.accounts.find(
-          account => account.provider === "google"
-        )
-        
-        if (!googleAccount?.access_token) {
-          results.push({
-            integrationId: integration.id,
-            status: "error",
-            error: "No Google access token found"
-          })
-          continue
-        }
-
         try {
+          // Get user's Google OAuth tokens from Supabase auth
+          const supabase = createClient()
+          const { data: { user }, error: userError } = await supabase.auth.getUser()
+          
+          if (userError || !user) {
+            results.push({
+              integrationId: integration.id,
+              status: "error",
+              error: "User not authenticated"
+            })
+            continue
+          }
+
+          // Check if user has Google provider
+          if (!user.app_metadata?.providers?.includes('google')) {
+            results.push({
+              integrationId: integration.id,
+              status: "error",
+              error: "No Google account connected"
+            })
+            continue
+          }
+
           // Import Gmail functions
           const { getImportantEmails, formatEmailForWhatsApp } = await import("@/lib/gmail")
           
-          const emails = await getImportantEmails(integration.userId, integration)
+          const emails = await getImportantEmails(integration.user_id, integration)
           
           for (const email of emails) {
             const formatted = formatEmailForWhatsApp(email)
@@ -201,8 +213,8 @@ export const pollGmail = inngest.createFunction(
               name: "alerts.send",
               data: {
                 alertId: null, // This is a system-generated alert
-                userId: integration.userId,
-                to: integration.user.accounts[0]?.access_token, // Would need user's WhatsApp number
+                userId: integration.user_id,
+                to: "+1234567890", // Would need user's WhatsApp number from profile
                 message: formatted.body,
                 title: formatted.title,
               },

@@ -1,27 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const supabase = createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
   
-  if (!session?.user?.id) {
+  if (userError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
     const { labelFilter, importance } = await request.json()
 
-    // Check if user has a Google account
-    const googleAccount = await prisma.account.findFirst({
-      where: {
-        userId: session.user.id,
-        provider: "google",
-      },
-    })
-
-    if (!googleAccount) {
+    // Check if user has Google OAuth enabled (they signed in with Google)
+    if (!user.app_metadata?.providers?.includes('google')) {
       return NextResponse.json(
         { error: "No Google account connected" }, 
         { status: 400 }
@@ -29,26 +21,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Create or update Gmail integration
-    const integration = await prisma.integration.upsert({
-      where: {
-        userId_type: {
-          userId: session.user.id,
-          type: "gmail",
-        },
-      },
-      update: {
-        labelFilter: labelFilter || "INBOX",
-        importance: importance || "important-only",
-        enabled: true,
-      },
-      create: {
-        userId: session.user.id,
+    const { data: integration, error } = await supabase
+      .from('integrations')
+      .upsert({
+        user_id: user.id,
         type: "gmail",
-        labelFilter: labelFilter || "INBOX",
+        label_filter: labelFilter || "INBOX",
         importance: importance || "important-only",
         enabled: true,
-      },
-    })
+      }, {
+        onConflict: 'user_id,type',
+        ignoreDuplicates: false
+      })
+      .select()
+      .single()
+
+    if (error) throw error
 
     return NextResponse.json({ integration }, { status: 201 })
   } catch (error) {

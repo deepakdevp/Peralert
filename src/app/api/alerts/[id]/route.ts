@@ -1,36 +1,39 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { createClient } from "@/lib/supabase/server"
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions)
+  const supabase = createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
   
-  if (!session?.user?.id) {
+  if (userError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
     const { enabled } = await request.json()
 
-    const alert = await prisma.alert.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      },
-    })
+    const { data: alert, error: findError } = await supabase
+      .from('alerts')
+      .select('*')
+      .eq('id', params.id)
+      .eq('user_id', user.id)
+      .single()
 
-    if (!alert) {
+    if (findError || !alert) {
       return NextResponse.json({ error: "Alert not found" }, { status: 404 })
     }
 
-    const updatedAlert = await prisma.alert.update({
-      where: { id: params.id },
-      data: { enabled },
-    })
+    const { data: updatedAlert, error: updateError } = await supabase
+      .from('alerts')
+      .update({ enabled })
+      .eq('id', params.id)
+      .select()
+      .single()
+
+    if (updateError) throw updateError
 
     return NextResponse.json({ alert: updatedAlert })
   } catch (error) {
@@ -46,27 +49,31 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions)
+  const supabase = createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
   
-  if (!session?.user?.id) {
+  if (userError || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
-    const alert = await prisma.alert.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      },
-    })
+    const { data: alert, error: findError } = await supabase
+      .from('alerts')
+      .select('*')
+      .eq('id', params.id)
+      .eq('user_id', user.id)
+      .single()
 
-    if (!alert) {
+    if (findError || !alert) {
       return NextResponse.json({ error: "Alert not found" }, { status: 404 })
     }
 
-    await prisma.alert.delete({
-      where: { id: params.id },
-    })
+    const { error: deleteError } = await supabase
+      .from('alerts')
+      .delete()
+      .eq('id', params.id)
+
+    if (deleteError) throw deleteError
 
     return NextResponse.json({ success: true })
   } catch (error) {

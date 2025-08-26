@@ -1,16 +1,14 @@
 import { google } from 'googleapis'
-import { prisma } from './prisma'
+import { createClient } from './supabase/server'
 
 export async function getGmailClient(userId: string) {
-  const account = await prisma.account.findFirst({
-    where: {
-      userId,
-      provider: 'google',
-    },
-  })
-
-  if (!account?.access_token) {
-    throw new Error('No Google account found')
+  const supabase = createClient()
+  
+  // Get user session from Supabase
+  const { data: { session }, error } = await supabase.auth.getSession()
+  
+  if (error || !session?.provider_token) {
+    throw new Error('No Google access token found')
   }
 
   const oauth2Client = new google.auth.OAuth2(
@@ -19,8 +17,8 @@ export async function getGmailClient(userId: string) {
   )
 
   oauth2Client.setCredentials({
-    access_token: account.access_token,
-    refresh_token: account.refresh_token,
+    access_token: session.provider_token,
+    refresh_token: session.provider_refresh_token,
   })
 
   return google.gmail({ version: 'v1', auth: oauth2Client })
@@ -32,8 +30,8 @@ export async function getImportantEmails(userId: string, integration: any) {
     
     // Build query based on integration settings
     let query = 'is:important'
-    if (integration.labelFilter && integration.labelFilter !== 'INBOX') {
-      query += ` label:${integration.labelFilter}`
+    if (integration.label_filter && integration.label_filter !== 'INBOX') {
+      query += ` label:${integration.label_filter}`
     }
     
     // Get messages from the last 5 minutes to avoid duplicates

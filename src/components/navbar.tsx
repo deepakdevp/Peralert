@@ -1,12 +1,21 @@
 "use client"
 
 import Link from "next/link"
-import { useSession, signIn, signOut } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useSupabase } from "@/components/providers"
+import { createClient } from "@/lib/supabase/client"
 
 export function Navbar() {
-  const { data: session, status } = useSession()
+  const { user, loading } = useSupabase()
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push("/")
+  }
 
   return (
     <nav className="border-b bg-background">
@@ -23,27 +32,27 @@ export function Navbar() {
               Pricing
             </Link>
             
-            {status === "loading" ? (
+            {loading ? (
               <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
-            ) : session ? (
+            ) : user ? (
               <div className="flex items-center space-x-4">
                 <Link href="/dashboard" className="text-sm font-medium hover:underline">
                   Dashboard
                 </Link>
                 <div className="flex items-center space-x-2">
                   <Avatar>
-                    <AvatarImage src={session.user?.image || ""} />
+                    <AvatarImage src={user.user_metadata?.avatar_url || ""} />
                     <AvatarFallback>
-                      {session.user?.name?.[0] || session.user?.email?.[0] || "U"}
+                      {user.user_metadata?.name?.[0] || user.email?.[0] || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <Button variant="outline" size="sm" onClick={() => signOut()}>
+                  <Button variant="outline" size="sm" onClick={handleSignOut}>
                     Sign Out
                   </Button>
                 </div>
               </div>
             ) : (
-              <Button onClick={() => signIn()}>Sign In</Button>
+              <Button onClick={() => router.push("/auth/signin")}>Sign In</Button>
             )}
           </div>
         </div>
